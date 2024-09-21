@@ -1,6 +1,6 @@
 // From swaweedfs util/grace
 
-package shellcli
+package shell
 
 import (
 	"fmt"

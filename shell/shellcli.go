@@ -1,4 +1,4 @@
-package shellcli
+package shell
 
 import (
 	"fmt"
