@@ -13,14 +13,15 @@ import (
 
 // ShellCli is a simple shell-like interface with commands
 type ShellCli[T any] struct {
-	ProjectName     string
-	Commands        map[string]*Command[T]
-	Splitter        splitter.Splitter
-	ArgSplitter     splitter.Splitter
-	CaseInsensitive bool
-	Prompter        func(*ShellCli[T]) string
-	Data            *T
-	HistoryPath     string
+	ProjectName      string
+	Commands         map[string]*Command[T]
+	Splitter         splitter.Splitter
+	ArgSplitter      splitter.Splitter
+	CaseInsensitive  bool
+	DebugCompletions bool
+	Prompter         func(*ShellCli[T]) string
+	Data             *T
+	HistoryPath      string
 
 	line *liner.State
 }
@@ -320,7 +321,9 @@ func (a *ShellCli[T]) setCompletionHandler() {
 			cmdData, err := a.ParseOutCommand(tokens)
 
 			if err != nil {
-				fmt.Println("error parsing command: ", err)
+				if a.DebugCompletions {
+					fmt.Println("error parsing command: ", err)
+				}
 				return
 			}
 
