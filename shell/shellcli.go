@@ -378,10 +378,8 @@ func (a *ShellCli[T]) setCompletionHandler() {
 					return
 				}
 
-				for _, comp := range completions {
-					c = append(c, comp)
-					return
-				}
+				c = completions
+				return
 			}
 
 			// If the command has no completer, return nothing
