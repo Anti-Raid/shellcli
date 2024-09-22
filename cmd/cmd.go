@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // A struct that holds the state of the command line

@@ -71,16 +71,21 @@ type Command[T any] struct {
 
 // Init initializes the shell client
 func (a *ShellCli[T]) Init() error {
+	encs := []*splitter.Enclosure{
+		splitter.Parenthesis, splitter.SquareBrackets, splitter.CurlyBrackets,
+		splitter.DoubleQuotesBackSlashEscaped, splitter.SingleQuotesBackSlashEscaped,
+	}
+
 	var err error
-	a.Splitter, err = splitter.NewSplitter(' ', splitter.DoubleQuotes, splitter.SingleQuotes)
+	a.Splitter, err = splitter.NewSplitter(' ', encs...)
 
 	if err != nil {
 		return fmt.Errorf("error initializing tokenizer: %s", err)
 	}
 
-	a.Splitter.AddDefaultOptions(splitter.IgnoreEmptyFirst, splitter.IgnoreEmptyLast, splitter.TrimSpaces, splitter.UnescapeQuotes)
+	a.Splitter.AddDefaultOptions(splitter.IgnoreEmptyFirst, splitter.IgnoreEmptyLast, splitter.TrimSpaces)
 
-	a.ArgSplitter, err = splitter.NewSplitter('=', splitter.DoubleQuotes, splitter.SingleQuotes)
+	a.ArgSplitter, err = splitter.NewSplitter('=', encs...)
 
 	if err != nil {
 		return fmt.Errorf("error initializing arg tokenizer: %s", err)
@@ -88,7 +93,7 @@ func (a *ShellCli[T]) Init() error {
 
 	a.ArgSplitter.AddDefaultOptions(splitter.IgnoreEmptyFirst, splitter.IgnoreEmptyLast, splitter.TrimSpaces, splitter.UnescapeQuotes)
 
-	a.historyPath = path.Join(os.TempDir(), "weed-shell")
+	a.historyPath = path.Join(os.TempDir(), a.historyPath)
 
 	return nil
 }
