@@ -287,7 +287,7 @@ func (a *ShellCli[T]) Run() {
 func (a *ShellCli[T]) setCompletionHandler() {
 	a.line.SetCompleter(func(line string) (c []string) {
 		// If empty, show all commands
-		fmt.Println("line: ", line)
+		panic("line: " + line)
 		if len(strings.ReplaceAll(" ", "", line)) == 0 {
 			for name := range a.Commands {
 				if strings.HasPrefix(name, strings.ToLower(line)) {
