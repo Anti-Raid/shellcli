@@ -67,6 +67,7 @@ type Command[T any] struct {
 	Description string
 	Args        [][3]string // Map of argument to the description and default value
 	Run         func(a *ShellCli[T], args map[string]string) error
+	Completer   func(a *ShellCli[T], args map[string]string) ([]string, error)
 }
 
 // Init initializes the shell client
@@ -98,10 +99,9 @@ func (a *ShellCli[T]) Init() error {
 	return nil
 }
 
-// Exec executes a command
-func (a *ShellCli[T]) Exec(cmd []string) error {
+func (a *ShellCli[T]) ParseOutCommand(cmd []string) (*Command[T], error) {
 	if len(cmd) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	cmdName := cmd[0]
@@ -113,18 +113,20 @@ func (a *ShellCli[T]) Exec(cmd []string) error {
 	cmdData, ok := a.Commands[cmdName]
 
 	if !ok {
-		return fmt.Errorf("unknown command: %s", cmd[0])
+		return nil, fmt.Errorf("unknown command: %s", cmd[0])
 	}
 
-	args := cmd[1:]
+	return cmdData, nil
+}
 
+func (a *ShellCli[T]) CreateArgMapFromArgs(cmdData *Command[T], args []string) (map[string]string, error) {
 	argMap := make(map[string]string)
 
 	for i, arg := range args {
 		fields, err := a.ArgSplitter.Split(arg)
 
 		if err != nil {
-			return fmt.Errorf("error splitting argument: %s", err)
+			return nil, fmt.Errorf("error splitting argument: %s", err)
 		}
 
 		if len(fields) == 1 {
@@ -139,13 +141,36 @@ func (a *ShellCli[T]) Exec(cmd []string) error {
 		}
 
 		if len(fields) != 2 {
-			return fmt.Errorf("invalid argument: %s", arg)
+			return nil, fmt.Errorf("invalid argument: %s", arg)
 		}
 
 		argMap[fields[0]] = fields[1]
 	}
 
-	err := cmdData.Run(a, argMap)
+	return argMap, nil
+}
+
+// Exec executes a command
+func (a *ShellCli[T]) Exec(cmd []string) error {
+	cmdData, err := a.ParseOutCommand(cmd)
+
+	if err != nil {
+		return err
+	}
+
+	if cmdData == nil {
+		return nil
+	}
+
+	args := cmd[1:]
+
+	argMap, err := a.CreateArgMapFromArgs(cmdData, args)
+
+	if err != nil {
+		return err
+	}
+
+	err = cmdData.Run(a, argMap)
 
 	if err != nil {
 		return err
@@ -261,11 +286,72 @@ func (a *ShellCli[T]) Run() {
 
 func (a *ShellCli[T]) setCompletionHandler() {
 	a.line.SetCompleter(func(line string) (c []string) {
-		for name := range a.Commands {
-			if strings.HasPrefix(name, strings.ToLower(line)) {
-				c = append(c, name)
+		// If empty, show all commands
+		if len(strings.ReplaceAll(" ", "", line)) == 0 {
+			for name := range a.Commands {
+				if strings.HasPrefix(name, strings.ToLower(line)) {
+					c = append(c, name)
+				}
+			}
+			return
+		} else {
+			if strings.Contains(line, ";") {
+				return // Don't try to complete commands with semicolons for now
+			}
+
+			command := strings.TrimSpace(line)
+
+			tokens, err := a.Splitter.Split(command)
+
+			if err != nil {
+				c = append(c, fmt.Sprintf("error splitting command: %s", err))
+				return
+			}
+
+			if len(tokens) == 0 || tokens[0] == "" {
+				return
+			}
+
+			if tokens[0] == "exit" || tokens[0] == "quit" {
+				return
+			}
+
+			// Try calling the command's completer
+			cmdData, err := a.ParseOutCommand(tokens)
+
+			if err != nil {
+				c = append(c, "error parsing command: "+err.Error())
+				return
+			}
+
+			if cmdData == nil {
+				return
+			}
+
+			if cmdData.Completer != nil {
+				args := tokens[1:]
+
+				argMap, err := a.CreateArgMapFromArgs(cmdData, args)
+
+				if err != nil {
+					c = append(c, fmt.Sprintf("error creating arg map: %s", err))
+					return
+				}
+
+				completions, err := cmdData.Completer(a, argMap)
+
+				if err != nil {
+					c = append(c, fmt.Sprintf("error running completer: %s", err))
+					return
+				}
+
+				for _, comp := range completions {
+					c = append(c, comp)
+					return
+				}
 			}
 		}
+
 		return
 	})
 }
