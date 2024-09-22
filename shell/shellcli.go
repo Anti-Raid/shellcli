@@ -20,9 +20,9 @@ type ShellCli[T any] struct {
 	CaseInsensitive bool
 	Prompter        func(*ShellCli[T]) string
 	Data            *T
+	HistoryPath     string
 
-	line        *liner.State
-	historyPath string
+	line *liner.State
 }
 
 // Returns a help command
@@ -93,7 +93,7 @@ func (a *ShellCli[T]) Init() error {
 
 	a.ArgSplitter.AddDefaultOptions(splitter.IgnoreEmptyFirst, splitter.IgnoreEmptyLast, splitter.TrimSpaces, splitter.UnescapeQuotes)
 
-	a.historyPath = path.Join(os.TempDir(), a.historyPath)
+	a.HistoryPath = path.Join(os.TempDir(), a.HistoryPath)
 
 	return nil
 }
@@ -271,14 +271,14 @@ func (a *ShellCli[T]) setCompletionHandler() {
 }
 
 func (a *ShellCli[T]) loadHistory() {
-	if f, err := os.Open(a.historyPath); err == nil {
+	if f, err := os.Open(a.HistoryPath); err == nil {
 		a.line.ReadHistory(f)
 		f.Close()
 	}
 }
 
 func (a *ShellCli[T]) saveHistory() {
-	if f, err := os.Create(a.historyPath); err != nil {
+	if f, err := os.Create(a.HistoryPath); err != nil {
 		fmt.Printf("Error creating history file: %v\n", err)
 	} else {
 		if _, err = a.line.WriteHistory(f); err != nil {
