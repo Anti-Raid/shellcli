@@ -304,7 +304,7 @@ func (a *ShellCli[T]) setCompletionHandler() {
 			tokens, err := a.Splitter.Split(command)
 
 			if err != nil {
-				c = append(c, line, fmt.Sprintf("error splitting command: %s", err), "exit", "quit")
+				fmt.Println(err)
 				return
 			}
 
@@ -320,7 +320,7 @@ func (a *ShellCli[T]) setCompletionHandler() {
 			cmdData, err := a.ParseOutCommand(tokens)
 
 			if err != nil {
-				c = append(c, line, "error parsing command: "+err.Error(), "exit", "quit")
+				fmt.Println("error parsing command: ", err)
 				return
 			}
 
@@ -335,14 +335,14 @@ func (a *ShellCli[T]) setCompletionHandler() {
 				argMap, err := a.CreateArgMapFromArgs(cmdData, args)
 
 				if err != nil {
-					c = append(c, line, fmt.Sprintf("error creating arg map: %s", err), "exit", "quit")
+					fmt.Println("error creating arg map: ", err)
 					return
 				}
 
 				completions, err := cmdData.Completer(a, argMap)
 
 				if err != nil {
-					c = append(c, line, fmt.Sprintf("error running completer: %s", err), "exit", "quit")
+					fmt.Println("error running completer: ", err)
 					return
 				}
 
