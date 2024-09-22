@@ -36,7 +36,12 @@ func (s *ShellCli[T]) Help() *Command[T] {
 		Completer: func(a *ShellCli[T], line string, args map[string]string) ([]string, error) {
 			cmd, ok := args["command"]
 			if !ok || cmd == "" {
-				return []string{}, nil
+				cmds := make([]string, 0, len(a.Commands))
+
+				for name := range a.Commands {
+					cmds = append(cmds, "help "+name)
+				}
+				return cmds, nil
 			}
 
 			cmd = strings.ToLower(cmd)
@@ -45,7 +50,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 
 			for name := range a.Commands {
 				if strings.HasPrefix(name, cmd) {
-					completions = append(completions, name)
+					completions = append(completions, "help "+name)
 				}
 			}
 
