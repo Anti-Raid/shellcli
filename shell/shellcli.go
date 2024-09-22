@@ -294,7 +294,7 @@ func (a *ShellCli[T]) setCompletionHandler() {
 					c = append(c, name)
 				}
 			}
-			return
+			return c
 		} else {
 			if strings.Contains(line, ";") {
 				return // Don't try to complete commands with semicolons for now
@@ -352,9 +352,10 @@ func (a *ShellCli[T]) setCompletionHandler() {
 					return
 				}
 			}
-		}
 
-		return
+			// If the command has no completer, show the command name
+			return []string{tokens[0]}
+		}
 	})
 }
 
