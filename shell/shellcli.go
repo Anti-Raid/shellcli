@@ -39,7 +39,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 				cmds := make([]string, 0, len(a.Commands))
 
 				for name := range a.Commands {
-					cmds = append(cmds, "help "+name)
+					cmds = append(cmds, "help "+name+" ")
 				}
 				return cmds, nil
 			}
@@ -50,7 +50,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 
 			for name := range a.Commands {
 				if strings.HasPrefix(name, cmd) {
-					completions = append(completions, "help "+name)
+					completions = append(completions, "help "+name+" ")
 				}
 			}
 
