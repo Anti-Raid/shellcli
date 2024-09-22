@@ -68,7 +68,7 @@ type Command[T any] struct {
 	Description string
 	Args        [][3]string // Map of argument to the description and default value
 	Run         func(a *ShellCli[T], args map[string]string) error
-	Completer   func(a *ShellCli[T], args map[string]string) ([]string, error)
+	Completer   func(a *ShellCli[T], line string, args map[string]string) ([]string, error)
 }
 
 // Init initializes the shell client
@@ -342,7 +342,7 @@ func (a *ShellCli[T]) setCompletionHandler() {
 					return
 				}
 
-				completions, err := cmdData.Completer(a, argMap)
+				completions, err := cmdData.Completer(a, line, argMap)
 
 				if err != nil {
 					fmt.Println("error running completer: ", err)
