@@ -361,8 +361,8 @@ func (a *ShellCli[T]) setCompletionHandler() {
 				}
 			}
 
-			// If the command has no completer, show the command name
-			return []string{tokens[0]}
+			// If the command has no completer, return nothing
+			return []string{}
 		}
 	})
 }
