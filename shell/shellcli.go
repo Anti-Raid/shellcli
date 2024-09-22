@@ -33,6 +33,24 @@ func (s *ShellCli[T]) Help() *Command[T] {
 		Args: [][3]string{
 			{"command", "Command to get help for", ""},
 		},
+		Completer: func(a *ShellCli[T], line string, args map[string]string) ([]string, error) {
+			cmd, ok := args["command"]
+			if !ok || cmd == "" {
+				return []string{}, nil
+			}
+
+			cmd = strings.ToLower(cmd)
+
+			var completions []string
+
+			for name := range a.Commands {
+				if strings.HasPrefix(name, cmd) {
+					completions = append(completions, name)
+				}
+			}
+
+			return completions, nil
+		},
 		Run: func(a *ShellCli[T], args map[string]string) error {
 			if arg, ok := args["command"]; ok && arg != "" {
 				cmd, ok := a.Commands[arg]
