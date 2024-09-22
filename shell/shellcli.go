@@ -328,6 +328,7 @@ func (a *ShellCli[T]) setCompletionHandler() {
 				return
 			}
 
+			// If the command has a completer, run it
 			if cmdData.Completer != nil {
 				args := tokens[1:]
 
