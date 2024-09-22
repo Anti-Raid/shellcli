@@ -280,7 +280,7 @@ func (a *ShellCli[T]) Run() {
 	})
 
 	a.line.SetCtrlCAborts(true)
-	a.line.SetTabCompletionStyle(liner.TabCircular)
+	a.line.SetTabCompletionStyle(liner.TabPrints)
 
 	a.setCompletionHandler()
 	a.loadHistory()
