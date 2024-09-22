@@ -324,6 +324,12 @@ func (a *ShellCli[T]) setCompletionHandler() {
 				if a.DebugCompletions {
 					fmt.Println("error parsing command: ", err)
 				}
+
+				for name := range a.Commands {
+					if strings.HasPrefix(name, strings.ToLower(line)) {
+						c = append(c, name)
+					}
+				}
 				return
 			}
 
