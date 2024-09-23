@@ -411,3 +411,48 @@ func (a *ShellCli[T]) saveHistory() {
 		f.Close()
 	}
 }
+
+// Look for an untyped arg, args are in format a=b, a='b', a="b". We need to find the last arg that is not closed
+// Test cases:
+// abc=def ghi=d ghi:json='{\"ahshsh\":\"ahs=293d\"==w=1 fhfhf}' should return nil as there is no untyped arg
+// abc=def ghi should return ghi
+// abc=def ghi= should return nil as ghi is typed due to the =
+func UtilFindUntypedArgInArgStr(args string) string {
+	// Split the input by spaces, preserving quoted arguments
+	var splitArgs []string
+	var currentArg strings.Builder
+	inQuotes := false
+
+	for _, char := range args {
+		if char == '\'' || char == '"' {
+			inQuotes = !inQuotes // Toggle inQuotes state
+		}
+		if char == ' ' && !inQuotes {
+			if currentArg.Len() > 0 {
+				splitArgs = append(splitArgs, currentArg.String())
+				currentArg.Reset()
+			}
+		} else {
+			currentArg.WriteRune(char)
+		}
+	}
+
+	// Append the last argument if there's any
+	if currentArg.Len() > 0 {
+		splitArgs = append(splitArgs, currentArg.String())
+	}
+
+	// Initialize a variable to store the last untyped argument
+	var lastUntyped string
+
+	for _, arg := range splitArgs {
+		// Check if the argument has an equals sign and is not closed
+		if !strings.Contains(arg, "=") {
+			lastUntyped = arg // Update the last untyped argument
+		} else if strings.HasSuffix(arg, "=") {
+			lastUntyped = "" // If an argument ends with '=', reset lastUntyped
+		}
+	}
+
+	return lastUntyped
+}
