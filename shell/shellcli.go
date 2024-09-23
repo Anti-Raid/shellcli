@@ -292,7 +292,7 @@ func (a *ShellCli[T]) Run() {
 		cmd, err := a.line.Prompt(a.Prompter(a))
 		if err != nil {
 			if err != io.EOF {
-				fmt.Printf("%v\n", err)
+				fmt.Printf("Prompt Error: %v\n", err)
 			}
 			return
 		}
@@ -333,7 +333,9 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 		tokens, err := a.Splitter.Split(command)
 
 		if err != nil {
-			fmt.Println(err)
+			if a.DebugCompletions {
+				fmt.Println(err)
+			}
 			return
 		}
 
@@ -372,14 +374,18 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 			argMap, err := a.CreateArgMapFromArgs(cmdData, args)
 
 			if err != nil {
-				fmt.Println("error creating arg map: ", err)
+				if a.DebugCompletions {
+					fmt.Println("error creating arg map: ", err)
+				}
 				return
 			}
 
 			completions, err := cmdData.Completer(a, line, argMap)
 
 			if err != nil {
-				fmt.Println("error running completer: ", err)
+				if a.DebugCompletions {
+					fmt.Println("error running completer: ", err)
+				}
 				return
 			}
 
