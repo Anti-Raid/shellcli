@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/go-andiamo/splitter"
@@ -282,7 +283,7 @@ func (a *ShellCli[T]) Run() {
 	a.line.SetCtrlCAborts(true)
 	a.line.SetTabCompletionStyle(liner.TabPrints)
 
-	a.setCompletionHandler()
+	a.line.SetCompleter(a.CompletionHandler) // Set the completion handler
 	a.loadHistory()
 
 	defer a.saveHistory()
@@ -308,90 +309,139 @@ func (a *ShellCli[T]) Run() {
 	}
 }
 
-func (a *ShellCli[T]) setCompletionHandler() {
-	a.line.SetCompleter(func(line string) (c []string) {
-		// If empty, show all commands
-		if len(strings.ReplaceAll(line, " ", "")) == 0 {
+// CompletionHandler is the completion handler for the shell client
+//
+// This may be useful for bash completion scripts etc.
+//
+// A simple getcompletion command is also provided by the builtin GetCompletion() command
+func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
+	// If empty, show all commands
+	if len(strings.ReplaceAll(line, " ", "")) == 0 {
+		for name := range a.Commands {
+			if strings.HasPrefix(name, strings.ToLower(line)) {
+				c = append(c, name)
+			}
+		}
+		return c
+	} else {
+		if strings.Contains(line, ";") {
+			return // Don't try to complete commands with semicolons for now
+		}
+
+		command := strings.TrimSpace(line)
+
+		tokens, err := a.Splitter.Split(command)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if len(tokens) == 0 || tokens[0] == "" {
+			return
+		}
+
+		if tokens[0] == "exit" || tokens[0] == "quit" {
+			return
+		}
+
+		// Try calling the command's completer
+		cmdData, err := a.ParseOutCommand(tokens)
+
+		if err != nil {
+			if a.DebugCompletions {
+				fmt.Println("error parsing command: ", err)
+			}
+
 			for name := range a.Commands {
 				if strings.HasPrefix(name, strings.ToLower(line)) {
 					c = append(c, name)
 				}
 			}
-			return c
-		} else {
-			if strings.Contains(line, ";") {
-				return // Don't try to complete commands with semicolons for now
-			}
-
-			command := strings.TrimSpace(line)
-
-			tokens, err := a.Splitter.Split(command)
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			if len(tokens) == 0 || tokens[0] == "" {
-				return
-			}
-
-			if tokens[0] == "exit" || tokens[0] == "quit" {
-				return
-			}
-
-			// Try calling the command's completer
-			cmdData, err := a.ParseOutCommand(tokens)
-
-			if err != nil {
-				if a.DebugCompletions {
-					fmt.Println("error parsing command: ", err)
-				}
-
-				for name := range a.Commands {
-					if strings.HasPrefix(name, strings.ToLower(line)) {
-						c = append(c, name)
-					}
-				}
-				return
-			}
-
-			if cmdData == nil {
-				return
-			}
-
-			// If the command has a completer, run it
-			if cmdData.Completer != nil {
-				args := tokens[1:]
-
-				argMap, err := a.CreateArgMapFromArgs(cmdData, args)
-
-				if err != nil {
-					fmt.Println("error creating arg map: ", err)
-					return
-				}
-
-				completions, err := cmdData.Completer(a, line, argMap)
-
-				if err != nil {
-					fmt.Println("error running completer: ", err)
-					return
-				}
-
-				c = completions
-
-				// Add a space to the end of each option
-				for i, completion := range c {
-					c[i] = completion + " "
-				}
-
-				return
-			}
-
-			// If the command has no completer, return nothing
-			return []string{}
+			return
 		}
-	})
+
+		if cmdData == nil {
+			return
+		}
+
+		// If the command has a completer, run it
+		if cmdData.Completer != nil {
+			args := tokens[1:]
+
+			argMap, err := a.CreateArgMapFromArgs(cmdData, args)
+
+			if err != nil {
+				fmt.Println("error creating arg map: ", err)
+				return
+			}
+
+			completions, err := cmdData.Completer(a, line, argMap)
+
+			if err != nil {
+				fmt.Println("error running completer: ", err)
+				return
+			}
+
+			c = completions
+
+			// Add a space to the end of each option
+			for i, completion := range c {
+				c[i] = completion + " "
+			}
+
+			return
+		}
+
+		// If the command has no completer, return nothing
+		return []string{}
+	}
+}
+
+// Returns a get completion command
+func (s *ShellCli[T]) GetCompletion() *Command[T] {
+	return &Command[T]{
+		Description: "Get help for a command",
+		Args: [][3]string{
+			{"line", "line to get completion for", ""},
+			{"format", "format to return completions in (printNewlineArray/printArray/strJoinArray_spaceSep/strJoinArray_newlineSep/strJoinArray_commaSep/strJoinArray_commaSpaceSep)", "printNewlineArray"},
+		},
+		Run: func(a *ShellCli[T], args map[string]string) error {
+			line, ok := args["line"]
+			if !ok || line == "" {
+				return fmt.Errorf("no line provided")
+			}
+
+			format, ok := args["format"]
+
+			if !ok || format == "" {
+				format = "printNewlineArray"
+			}
+
+			completions := a.CompletionHandler(line)
+
+			switch format {
+			case "printNewlineArray":
+				for i, completion := range completions {
+					fmt.Println(strconv.Itoa(i) + ") " + completion)
+				}
+			case "printArray":
+				fmt.Println(completions)
+			case "strJoinArray_spaceSep":
+				fmt.Println(strings.Join(completions, " "))
+			case "strJoinArray_newlineSep":
+				fmt.Println(strings.Join(completions, "\n"))
+			case "strJoinArray_commaSep":
+				fmt.Println(strings.Join(completions, ","))
+			case "strJoinArray_commaSpaceSep":
+				fmt.Println(strings.Join(completions, ", "))
+			default:
+				return fmt.Errorf("unknown format: %s", format)
+			}
+
+			return nil
+		},
+	}
 }
 
 func (a *ShellCli[T]) loadHistory() {
