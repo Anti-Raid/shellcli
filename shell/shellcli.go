@@ -403,13 +403,17 @@ func (s *ShellCli[T]) GetCompletion() *Command[T] {
 	return &Command[T]{
 		Description: "Get help for a command",
 		Args: [][3]string{
-			{"line", "line to get completion for", ""},
+			{"line", "line to get completion for. Use @empty for empty line", ""},
 			{"format", "format to return completions in (printNewlineArray/printArray/strJoinArray_spaceSep/strJoinArray_newlineSep/strJoinArray_commaSep/strJoinArray_commaSpaceSep)", "printNewlineArray"},
 		},
 		Run: func(a *ShellCli[T], args map[string]string) error {
 			line, ok := args["line"]
 			if !ok || line == "" {
 				return fmt.Errorf("no line provided")
+			}
+
+			if line == "@empty" {
+				line = ""
 			}
 
 			format, ok := args["format"]
