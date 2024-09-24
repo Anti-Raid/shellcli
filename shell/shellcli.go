@@ -30,6 +30,7 @@ type ShellCli[T any] struct {
 // Returns a help command
 func (s *ShellCli[T]) Help() *Command[T] {
 	return &Command[T]{
+		Name:        "help",
 		Description: "Get help for a command",
 		Args: [][3]string{
 			{"command", "Command to get help for", ""},
@@ -40,7 +41,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 				cmds := make([]string, 0, len(a.Commands))
 
 				for name := range a.Commands {
-					cmds = append(cmds, "help "+name)
+					cmds = append(cmds, name)
 				}
 				return cmds, nil
 			}
@@ -51,7 +52,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 
 			for name := range a.Commands {
 				if strings.HasPrefix(name, cmd) {
-					completions = append(completions, "help "+name)
+					completions = append(completions, name)
 				}
 			}
 
@@ -89,6 +90,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 
 // Command is a command for the shell client
 type Command[T any] struct {
+	Name        string // Name of the command to use by default
 	Description string
 	Args        [][3]string // Map of argument to the description and default value
 	Run         func(a *ShellCli[T], args map[string]string) error
@@ -393,7 +395,7 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 
 			// Add a space to the end of each option
 			for i, completion := range c {
-				c[i] = completion + " "
+				c[i] = cmdData.Name + " " + completion + " "
 			}
 
 			return
@@ -407,7 +409,7 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 // ArgBasedCompletionHandler is a completion handler that can be used as a fallback
 func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line string, args map[string]string) (c []string, err error) {
 	if a.DebugCompletions {
-		fmt.Println("ArgBasedCompletionHandler: ", line)
+		fmt.Println("ArgBasedCompletionHandler: ", cmd.Name, line)
 	}
 	untypedArg := UtilFindUntypedArgInArgStr(line)
 
@@ -415,14 +417,14 @@ func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line stri
 		// Case #1: There is an untyped arg
 		for _, i := range cmd.Args {
 			if strings.HasPrefix(i[0], untypedArg) {
-				c = append(c, i[0])
+				c = append(c, i[0]+"=")
 			}
 		}
 	} else {
 		// Case #2: List all args the user does not have
 		for _, i := range cmd.Args {
 			if _, ok := args[i[0]]; !ok {
-				c = append(c, i[0])
+				c = append(c, i[0]+"=")
 			}
 		}
 	}
