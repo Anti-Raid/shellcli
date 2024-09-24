@@ -429,11 +429,15 @@ func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line stri
 
 // Returns a get completion command
 func (s *ShellCli[T]) GetCompletion() *Command[T] {
-	return &Command[T]{
+	var cmd *Command[T]
+	cmd = &Command[T]{
 		Description: "Get help for a command",
 		Args: [][3]string{
 			{"line", "line to get completion for. Use @empty for empty line", ""},
 			{"format", "format to return completions in (printNewlineArray/printArray/strJoinArray_spaceSep/strJoinArray_newlineSep/strJoinArray_commaSep/strJoinArray_commaSpaceSep)", "printNewlineArray"},
+		},
+		Completer: func(a *ShellCli[T], line string, args map[string]string) ([]string, error) {
+			return ArgBasedCompletionHandler(a, cmd, line, args)
 		},
 		Run: func(a *ShellCli[T], args map[string]string) error {
 			line, ok := args["line"]
@@ -475,6 +479,8 @@ func (s *ShellCli[T]) GetCompletion() *Command[T] {
 			return nil
 		},
 	}
+
+	return cmd
 }
 
 func (a *ShellCli[T]) loadHistory() {
