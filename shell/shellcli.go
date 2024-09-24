@@ -449,6 +449,7 @@ func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line stri
 func (s *ShellCli[T]) GetCompletion() *Command[T] {
 	var cmd *Command[T]
 	cmd = &Command[T]{
+		Name:        "getcompletion",
 		Description: "Get help for a command",
 		Args: [][3]string{
 			{"line", "line to get completion for. Use @empty for empty line", ""},
