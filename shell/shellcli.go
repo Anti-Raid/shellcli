@@ -30,7 +30,9 @@ type ShellCli[T any] struct {
 
 // Returns a help command
 func (s *ShellCli[T]) Help() *Command[T] {
-	return &Command[T]{
+	var cmdData *Command[T]
+
+	cmdData = &Command[T]{
 		Name:        "help",
 		Description: "Get help for a command",
 		Args: [][3]string{
@@ -42,7 +44,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 				cmds := make([]string, 0, len(a.Commands))
 
 				for name := range a.Commands {
-					cmds = append(cmds, name)
+					cmds = append(cmds, cmdData.Name+" "+name)
 				}
 				return cmds, nil
 			}
@@ -53,7 +55,7 @@ func (s *ShellCli[T]) Help() *Command[T] {
 
 			for name := range a.Commands {
 				if strings.HasPrefix(name, cmd) {
-					completions = append(completions, name)
+					completions = append(completions, cmdData.Name+" "+name)
 				}
 			}
 
@@ -87,6 +89,8 @@ func (s *ShellCli[T]) Help() *Command[T] {
 			return nil
 		},
 	}
+
+	return cmdData
 }
 
 // Command is a command for the shell client
@@ -123,6 +127,21 @@ func (a *ShellCli[T]) Init() error {
 	a.ArgSplitter.AddDefaultOptions(splitter.IgnoreEmptyFirst, splitter.IgnoreEmptyLast, splitter.TrimSpaces, splitter.UnescapeQuotes)
 
 	a.HistoryPath = path.Join(os.TempDir(), a.HistoryPath)
+
+	if a.Prompter == nil {
+		a.Prompter = func(a *ShellCli[T]) string {
+			return a.ProjectName + "> "
+		}
+	}
+
+	if a.Commands == nil {
+		a.Commands = make(map[string]*Command[T])
+	}
+
+	// Correct cmd.Name
+	for name, cmd := range a.Commands {
+		cmd.Name = name
+	}
 
 	return nil
 }
@@ -410,7 +429,18 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 // ArgBasedCompletionHandler is a completion handler that can be used as a fallback
 func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line string, args map[string]string) (c []string, err error) {
 	// Case 1: In the middle of typing out an argument
-	argsStr := strings.Replace(strings.TrimSpace(line), cmd.Name, "", 1)
+	var argsStr string
+	if cmd.Name != "" {
+		argsStr = strings.Replace(strings.TrimSpace(line), cmd.Name, "", 1)
+	} else {
+		argSplit := strings.SplitN(strings.TrimSpace(line), " ", 2)
+
+		if len(argSplit) == 2 {
+			argsStr = argSplit[1]
+		} else {
+			return
+		}
+	}
 
 	// Check if the user is at an '=' sign. This means that we should not provide completions at all as they want to type out a value
 	lastArg := UtilFindLastArgInArgStr(argsStr)
