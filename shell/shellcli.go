@@ -410,7 +410,7 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 // ArgBasedCompletionHandler is a completion handler that can be used as a fallback
 func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line string, args map[string]string) (c []string, err error) {
 	// Case 1: In the middle of typing out an argument
-	argsStr := strings.TrimSpace(strings.Replace(line, cmd.Name, "", 1))
+	argsStr := strings.Replace(strings.TrimSpace(line), cmd.Name, "", 1)
 
 	// Check if the user is at an '=' sign. This means that we should not provide completions at all as they want to type out a value
 	lastArg := UtilFindLastArgInArgStr(argsStr)
@@ -423,7 +423,7 @@ func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line stri
 	untypedArg := UtilFindUntypedArgInArgStr(argsStr)
 
 	if a.DebugCompletions {
-		fmt.Println("Untyped arg: ", untypedArg)
+		fmt.Println("Untyped arg:", untypedArg)
 	}
 
 	if untypedArg != "" {
