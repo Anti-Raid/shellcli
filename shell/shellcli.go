@@ -423,7 +423,7 @@ func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line stri
 	untypedArg := UtilFindUntypedArgInArgStr(argsStr)
 
 	if a.DebugCompletions {
-		fmt.Println("Untyped arg:", untypedArg)
+		fmt.Println("Untyped arg:", untypedArg, "Last arg:", lastArg, "Args:", argsStr)
 	}
 
 	if untypedArg != "" {
