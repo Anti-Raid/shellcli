@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/anti-raid/spintrack v0.16.0 // direct
 	github.com/mattn/go-runewidth v0.0.3 // indirect
 	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1 // indirect
 )

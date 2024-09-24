@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/anti-raid/spintrack/strutils"
 	"github.com/go-andiamo/splitter"
 	"github.com/peterh/liner"
 )
@@ -408,17 +409,24 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 
 // ArgBasedCompletionHandler is a completion handler that can be used as a fallback
 func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line string, args map[string]string) (c []string, err error) {
-	untypedArg := strings.TrimSpace(UtilFindUntypedArgInArgStr(line))
+	// Case 1: In the middle of typing out an argument
+	argsStr := strings.TrimSpace(strings.Replace(line, cmd.Name, "", 1))
 
-	if a.DebugCompletions {
-		fmt.Println("ArgBasedCompletionHandler: ", cmd.Name, line, untypedArg)
+	// Check if the user is at an '=' sign. This means that we should not provide completions at all as they want to type out a value
+	lastArg := UtilFindLastArgInArgStr(argsStr)
+
+	if strings.HasSuffix(lastArg, "=") {
+		return
 	}
+
+	// Look for an untyped arg, args are in format a=b
+	untypedArg := UtilFindUntypedArgInArgStr(argsStr)
 
 	if untypedArg != "" {
 		// Case #1: There is an untyped arg
 		for _, i := range cmd.Args {
 			if strings.HasPrefix(i[0], untypedArg) {
-				c = append(c, cmd.Name+" "+i[0]+"=")
+				c = append(c, strings.TrimSpace(strutils.ReplaceFromBack(line, untypedArg, "", 1))+" "+i[0]+"=")
 			}
 		}
 	} else {
