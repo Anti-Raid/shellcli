@@ -395,7 +395,7 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 
 			// Add a space to the end of each option
 			for i, completion := range c {
-				c[i] = cmdData.Name + " " + completion + " "
+				c[i] = line + " " + completion + " "
 			}
 
 			return
