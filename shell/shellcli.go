@@ -395,7 +395,7 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 
 			// Add a space to the end of each option
 			for i, completion := range c {
-				c[i] = line + " " + completion + " "
+				c[i] = completion + " "
 			}
 
 			return
@@ -417,14 +417,14 @@ func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line stri
 		// Case #1: There is an untyped arg
 		for _, i := range cmd.Args {
 			if strings.HasPrefix(i[0], untypedArg) {
-				c = append(c, i[0]+"=")
+				c = append(c, cmd.Name+" "+i[0]+"=")
 			}
 		}
 	} else {
 		// Case #2: List all args the user does not have
 		for _, i := range cmd.Args {
 			if _, ok := args[i[0]]; !ok {
-				c = append(c, i[0]+"=")
+				c = append(c, cmd.Name+" "+i[0]+"=")
 			}
 		}
 	}
