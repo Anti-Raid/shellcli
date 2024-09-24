@@ -408,10 +408,11 @@ func (a *ShellCli[T]) CompletionHandler(line string) (c []string) {
 
 // ArgBasedCompletionHandler is a completion handler that can be used as a fallback
 func ArgBasedCompletionHandler[T any](a *ShellCli[T], cmd *Command[T], line string, args map[string]string) (c []string, err error) {
+	untypedArg := strings.TrimSpace(UtilFindUntypedArgInArgStr(line))
+
 	if a.DebugCompletions {
-		fmt.Println("ArgBasedCompletionHandler: ", cmd.Name, line)
+		fmt.Println("ArgBasedCompletionHandler: ", cmd.Name, line, untypedArg)
 	}
-	untypedArg := UtilFindUntypedArgInArgStr(line)
 
 	if untypedArg != "" {
 		// Case #1: There is an untyped arg
